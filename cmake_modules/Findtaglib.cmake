@@ -24,104 +24,78 @@ endif(NOT WIN32)
 set(TAGLIB_LIBRARIES)
 set(TAGLIB_CFLAGS)
 
-# if taglib-config has been found
-if(TAGLIBCONFIG_EXECUTABLE)
+find_path(TAGLIB_INCLUDE_DIRS
+NAMES
+tag.h
+PATH_SUFFIXES taglib
+PATHS
+${KDE4_INCLUDE_DIR}
+${INCLUDE_INSTALL_DIR}
+)
 
-  exec_program(${TAGLIBCONFIG_EXECUTABLE} ARGS --version RETURN_VALUE _return_VALUE OUTPUT_VARIABLE TAGLIB_VERSION)
+IF(NOT WIN32)
+  # on non-win32 we don't need to take care about WIN32_DEBUG_POSTFIX
 
-  if(TAGLIB_VERSION STRLESS "${TAGLIB_MIN_VERSION}")
-     message(STATUS "TagLib version too old: version searched :${TAGLIB_MIN_VERSION}, found ${TAGLIB_VERSION}")
-     set(TAGLIB_FOUND FALSE)
-  else(TAGLIB_VERSION STRLESS "${TAGLIB_MIN_VERSION}")
+  FIND_LIBRARY(TAGLIB_LIBRARIES tag PATHS ${KDE4_LIB_DIR} ${LIB_INSTALL_DIR})
 
-     exec_program(${TAGLIBCONFIG_EXECUTABLE} ARGS --libs RETURN_VALUE _return_VALUE OUTPUT_VARIABLE TAGLIB_LIBRARIES)
+ELSE(NOT WIN32)
 
-     exec_program(${TAGLIBCONFIG_EXECUTABLE} ARGS --cflags RETURN_VALUE _return_VALUE OUTPUT_VARIABLE TAGLIB_CFLAGS)
+  # 1. get all possible libnames
+  SET(args PATHS ${KDE4_LIB_DIR} ${LIB_INSTALL_DIR})
+  SET(newargs "")
+  SET(libnames_release "")
+  SET(libnames_debug "")
 
-     if(TAGLIB_LIBRARIES AND TAGLIB_CFLAGS)
-        set(TAGLIB_FOUND TRUE)
-     endif(TAGLIB_LIBRARIES AND TAGLIB_CFLAGS)
-     string(REGEX REPLACE " *-I" ";" TAGLIB_INCLUDE_DIRS "${TAGLIB_CFLAGS}")
-  endif(TAGLIB_VERSION STRLESS "${TAGLIB_MIN_VERSION}") 
-  mark_as_advanced(TAGLIB_CFLAGS TAGLIB_LIBRARIES TAGLIB_INCLUDE_DIRS)
+  LIST(LENGTH args listCount)
 
-else(TAGLIBCONFIG_EXECUTABLE)
+    # just one name
+    LIST(APPEND libnames_release "tag")
+    LIST(APPEND libnames_debug   "tagd")
 
-  find_path(TAGLIB_INCLUDE_DIRS
-    NAMES
-    tag.h
-    PATH_SUFFIXES taglib
-    PATHS
-    ${KDE4_INCLUDE_DIR}
-    ${INCLUDE_INSTALL_DIR}
+    SET(newargs ${args})
+
+  # search the release lib
+  FIND_LIBRARY(TAGLIB_LIBRARIES_RELEASE
+               NAMES ${libnames_release}
+               ${newargs}
   )
 
-    IF(NOT WIN32)
-      # on non-win32 we don't need to take care about WIN32_DEBUG_POSTFIX
+  # search the debug lib
+  FIND_LIBRARY(TAGLIB_LIBRARIES_DEBUG
+               NAMES ${libnames_debug}
+               ${newargs}
+  )
 
-      FIND_LIBRARY(TAGLIB_LIBRARIES tag PATHS ${KDE4_LIB_DIR} ${LIB_INSTALL_DIR})
+  IF(TAGLIB_LIBRARIES_RELEASE AND TAGLIB_LIBRARIES_DEBUG)
 
-    ELSE(NOT WIN32)
+    # both libs found
+    SET(TAGLIB_LIBRARIES optimized ${TAGLIB_LIBRARIES_RELEASE}
+                    debug     ${TAGLIB_LIBRARIES_DEBUG})
 
-      # 1. get all possible libnames
-      SET(args PATHS ${KDE4_LIB_DIR} ${LIB_INSTALL_DIR})             
-      SET(newargs "")               
-      SET(libnames_release "")      
-      SET(libnames_debug "")        
+  ELSE(TAGLIB_LIBRARIES_RELEASE AND TAGLIB_LIBRARIES_DEBUG)
 
-      LIST(LENGTH args listCount)
+    IF(TAGLIB_LIBRARIES_RELEASE)
 
-        # just one name
-        LIST(APPEND libnames_release "tag")
-        LIST(APPEND libnames_debug   "tagd")
+      # only release found
+      SET(TAGLIB_LIBRARIES ${TAGLIB_LIBRARIES_RELEASE})
 
-        SET(newargs ${args})
+    ELSE(TAGLIB_LIBRARIES_RELEASE)
 
-      # search the release lib
-      FIND_LIBRARY(TAGLIB_LIBRARIES_RELEASE
-                   NAMES ${libnames_release}
-                   ${newargs}
-      )
+      # only debug (or nothing) found
+      SET(TAGLIB_LIBRARIES ${TAGLIB_LIBRARIES_DEBUG})
 
-      # search the debug lib
-      FIND_LIBRARY(TAGLIB_LIBRARIES_DEBUG
-                   NAMES ${libnames_debug}
-                   ${newargs}
-      )
+    ENDIF(TAGLIB_LIBRARIES_RELEASE)
 
-      IF(TAGLIB_LIBRARIES_RELEASE AND TAGLIB_LIBRARIES_DEBUG)
+  ENDIF(TAGLIB_LIBRARIES_RELEASE AND TAGLIB_LIBRARIES_DEBUG)
 
-        # both libs found
-        SET(TAGLIB_LIBRARIES optimized ${TAGLIB_LIBRARIES_RELEASE}
-                        debug     ${TAGLIB_LIBRARIES_DEBUG})
+  MARK_AS_ADVANCED(TAGLIB_LIBRARIES_RELEASE)
+  MARK_AS_ADVANCED(TAGLIB_LIBRARIES_DEBUG)
 
-      ELSE(TAGLIB_LIBRARIES_RELEASE AND TAGLIB_LIBRARIES_DEBUG)
+ENDIF(NOT WIN32)
 
-        IF(TAGLIB_LIBRARIES_RELEASE)
-
-          # only release found
-          SET(TAGLIB_LIBRARIES ${TAGLIB_LIBRARIES_RELEASE})
-
-        ELSE(TAGLIB_LIBRARIES_RELEASE)
-
-          # only debug (or nothing) found
-          SET(TAGLIB_LIBRARIES ${TAGLIB_LIBRARIES_DEBUG})
-
-        ENDIF(TAGLIB_LIBRARIES_RELEASE)
-
-      ENDIF(TAGLIB_LIBRARIES_RELEASE AND TAGLIB_LIBRARIES_DEBUG)
-
-      MARK_AS_ADVANCED(TAGLIB_LIBRARIES_RELEASE)
-      MARK_AS_ADVANCED(TAGLIB_LIBRARIES_DEBUG)
-
-    ENDIF(NOT WIN32)
-  
-  INCLUDE(FindPackageMessage)
-  INCLUDE(FindPackageHandleStandardArgs)
-  FIND_PACKAGE_HANDLE_STANDARD_ARGS(Taglib DEFAULT_MSG TAGLIB_INCLUDE_DIRS TAGLIB_LIBRARIES)
-
-endif(TAGLIBCONFIG_EXECUTABLE)
-
+INCLUDE(FindPackageMessage)
+INCLUDE(FindPackageHandleStandardArgs)
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(Taglib DEFAULT_MSG TAGLIB_INCLUDE_DIRS TAGLIB_LIBRARIES)
 
 if(TAGLIB_FOUND)
   if(NOT Taglib_FIND_QUIETLY AND TAGLIBCONFIG_EXECUTABLE)
