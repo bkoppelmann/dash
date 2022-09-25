@@ -15,6 +15,7 @@
 #include "app/pages/camera.hpp"
 #include "app/pages/vehicle.hpp"
 #include "app/pages/launcher.hpp"
+#include "app/pages/navit.hpp"
 #include "app/pages/media.hpp"
 #include "app/pages/settings.hpp"
 #include "app/quick_views/combo.hpp"
@@ -104,6 +105,7 @@ Session::Layout::Layout(QSettings &settings, Arbiter &arbiter)
 {
     this->pages_ = {
         this->openauto_page,
+        new NavitPage(arbiter),
         new MediaPage(arbiter),
         new VehiclePage(arbiter),
         new CameraPage(arbiter),
