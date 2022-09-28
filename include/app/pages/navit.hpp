@@ -19,4 +19,5 @@ class NavitPage : public QStackedWidget, public Page {
     void init() override;
 
    private:
+    void init_navit();
 };

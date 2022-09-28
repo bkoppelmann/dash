@@ -42,6 +42,7 @@ find_package(rtaudio REQUIRED)
 find_package(taglib REQUIRED)
 find_package(aasdk REQUIRED)
 find_package(openauto REQUIRED)
+find_package(navit REQUIRED)
 
 if(RPI_BUILD AND NOT GST_BUILD)
     add_definitions(-DUSE_OMX -DOMX_SKIP64BIT)
@@ -121,6 +122,7 @@ target_link_libraries(dash
     aasdk_proto
     aasdk
     openauto
+    navit
     ${Boost_LIBRARIES}
     ${Qt5Svg_LIBRARIES}
     ${Qt5Xml_LIBRARIES}
